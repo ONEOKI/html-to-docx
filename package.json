@@ -1,6 +1,6 @@
 {
-  "name": "html-to-docx",
-  "version": "1.8.0",
+  "name": "@persuit/html-to-docx",
+  "version": "1.0.2",
   "description": "HTML to DOCX converter",
   "keywords": [
     "html",
@@ -10,6 +10,9 @@
     "office",
     "word"
   ],
+  "publishConfig": {
+    "registry": "https://us-central1-npm.pkg.dev/persuit-core/persuit-npmrepo/"
+  },
   "main": "dist/html-to-docx.umd.js",
   "module": "dist/html-to-docx.esm.js",
   "scripts": {
@@ -24,28 +27,8 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/privateOmega/html-to-docx.git"
+    "url": "git+https://github.com/ONEOKI/html-to-docx.git"
   },
-  "author": "privateOmega <privateOmega@protonmail.com>",
-  "contributors": [
-    "amrita-syn <amrita.yadav@synapsica.com>",
-    "charuthaB <charutha.bhaskar@synapsica.com>",
-    "hanagejet",
-    "kurukururuu <apriansyah.fajar94@gmail.com>",
-    "erenard",
-    "KeithGillette",
-    "juralio-james",
-    "nicolasiscoding <nicolascoding@gmail.com>",
-    "zedtux <zedtux@zedroot.org>",
-    "hlerebours",
-    "hakjeri",
-    "tasola"
-  ],
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/privateOmega/html-to-docx/issues"
-  },
-  "homepage": "https://github.com/privateOmega/html-to-docx#readme",
   "devDependencies": {
     "@commitlint/cli": "^13.1.0",
     "@commitlint/config-conventional": "^13.1.0",

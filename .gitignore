@@ -51,6 +51,9 @@ typings/
 # Optional npm cache directory
 .npm
 
+# Npm config
+.npmrc
+
 # Optional eslint cache
 .eslintcache
 
@@ -104,3 +107,6 @@ dist/
 # Temporary folders
 tmp/
 temp/
+
+# System files
+.DS_Store

@@ -361,7 +361,7 @@ const modifiedStyleAttributesBuilder = (docxDocumentInstance, vNode, attributes,
       modifiedAttributes.display = vNode.properties.style.display;
     }
 
-    if (vNode.properties.style.width) {
+    if (vNode.properties.style.width && !vNode.properties.style.width.includes('%')) {
       modifiedAttributes.width = vNode.properties.style.width;
     }
   }
