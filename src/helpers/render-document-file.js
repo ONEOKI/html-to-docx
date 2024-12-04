@@ -85,9 +85,49 @@ export const buildImage = async (docxDocumentInstance, vNode, maximumWidth = nul
   }
 };
 
-export const buildList = async (vNode, docxDocumentInstance, xmlFragment) => {
-  const listElements = [];
+const buildListParagraphChildren = (childVNode) => {
+  if (isVText(childVNode)) {
+    return [childVNode];
+  }
 
+  if (isVNode(childVNode)) {
+    if (childVNode.tagName.toLowerCase() === 'li') {
+      // Not sure if this condition can be reached since we're catching it in buildListFallbackNode
+      return [...childVNode.children];
+    }
+
+    return [childVNode];
+  }
+
+  // Will be an empty paragraph
+  return [];
+};
+
+const buildListFallbackNode = (childVNode) => {
+  // childVNode is not nested list (ol or ul). Parent is not p
+  const listParagraphChildren = buildListParagraphChildren(childVNode);
+  const paragraphVNode = new VNode('p', null, listParagraphChildren);
+
+  if (isVNode(childVNode)) {
+    if (childVNode.tagName.toLowerCase() === 'li') {
+      // It's an li, return as is
+      return childVNode;
+    }
+
+    if (childVNode.tagName.toLowerCase() !== 'p') {
+      // It's a VNode, but something else. Create a new p VNode
+      return paragraphVNode;
+    }
+
+    // It's a p, return as is
+    return childVNode;
+  }
+
+  // It's something else, create a new p VNode
+  return paragraphVNode;
+};
+
+export const buildList = async (vNode, docxDocumentInstance, xmlFragment) => {
   let vNodeObjects = [
     {
       node: vNode,
@@ -121,6 +161,7 @@ export const buildList = async (vNode, docxDocumentInstance, xmlFragment) => {
     ) {
       const tempVNodeObjects = tempVNodeObject.node.children.reduce((accumulator, childVNode) => {
         if (['ul', 'ol'].includes(childVNode.tagName)) {
+          // childVNode is a nested list, add 1 to level
           accumulator.push({
             node: childVNode,
             level: tempVNodeObject.level + 1,
@@ -130,44 +171,21 @@ export const buildList = async (vNode, docxDocumentInstance, xmlFragment) => {
               childVNode.properties
             ),
           });
+        } else if (
+          accumulator.length > 0 &&
+          isVNode(accumulator[accumulator.length - 1].node) &&
+          accumulator[accumulator.length - 1].node.tagName.toLowerCase() === 'p'
+        ) {
+          // Previous childVNode is a paragraph, assume inline formatting and append current childVNode to the paragraph
+          accumulator[accumulator.length - 1].node.children.push(childVNode);
         } else {
-          // eslint-disable-next-line no-lonely-if
-          if (
-            accumulator.length > 0 &&
-            isVNode(accumulator[accumulator.length - 1].node) &&
-            accumulator[accumulator.length - 1].node.tagName.toLowerCase() === 'p'
-          ) {
-            accumulator[accumulator.length - 1].node.children.push(childVNode);
-          } else {
-            const paragraphVNode = new VNode(
-              'p',
-              null,
-              // eslint-disable-next-line no-nested-ternary
-              isVText(childVNode)
-                ? [childVNode]
-                : // eslint-disable-next-line no-nested-ternary
-                isVNode(childVNode)
-                ? childVNode.tagName.toLowerCase() === 'li'
-                  ? [...childVNode.children]
-                  : [childVNode]
-                : []
-            );
-            accumulator.push({
-              // eslint-disable-next-line prettier/prettier, no-nested-ternary
-              node: isVNode(childVNode)
-                ? // eslint-disable-next-line prettier/prettier, no-nested-ternary
-                  childVNode.tagName.toLowerCase() === 'li'
-                  ? childVNode
-                  : childVNode.tagName.toLowerCase() !== 'p'
-                  ? paragraphVNode
-                  : childVNode
-                : // eslint-disable-next-line prettier/prettier
-                  paragraphVNode,
-              level: tempVNodeObject.level,
-              type: tempVNodeObject.type,
-              numberingId: tempVNodeObject.numberingId,
-            });
-          }
+          // Handles li. Also handles 'other' by creating a new paragraph
+          accumulator.push({
+            node: buildListFallbackNode(childVNode),
+            level: tempVNodeObject.level,
+            type: tempVNodeObject.type,
+            numberingId: tempVNodeObject.numberingId,
+          });
         }
 
         return accumulator;
@@ -175,8 +193,6 @@ export const buildList = async (vNode, docxDocumentInstance, xmlFragment) => {
       vNodeObjects = tempVNodeObjects.concat(vNodeObjects);
     }
   }
-
-  return listElements;
 };
 
 async function findXMLEquivalent(docxDocumentInstance, vNode, xmlFragment) {
