@@ -85,6 +85,30 @@ export const buildImage = async (docxDocumentInstance, vNode, maximumWidth = nul
   }
 };
 
+const extractPlainString = (vNode) => {
+  if (!vNode) return '';
+
+  // If the vNode is a text vNode, return its text
+  if (typeof vNode.text === 'string') {
+    return vNode.text;
+  }
+
+  // If the vNode has children, recursively extract text from them
+  if (Array.isArray(vNode.children)) {
+    return vNode.children.map(extractPlainString).join('\n');
+  }
+
+  return '';
+};
+
+const isBlockElement = (vNode) => {
+  const blockElements = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div'];
+
+  if (!isVNode(vNode)) return false;
+
+  return blockElements.includes(vNode.tagName.toLowerCase());
+};
+
 const buildListParagraphChildren = (childVNode) => {
   if (isVText(childVNode)) {
     return [childVNode];
@@ -96,6 +120,13 @@ const buildListParagraphChildren = (childVNode) => {
       return [...childVNode.children];
     }
 
+    if (isBlockElement(childVNode)) {
+      // Fix for block elements creating invalid nodes
+      // Recursively extract the text and return new Vtext
+      const plainString = extractPlainString(childVNode);
+      return [new VText(plainString)];
+    }
+
     return [childVNode];
   }
 
@@ -103,11 +134,14 @@ const buildListParagraphChildren = (childVNode) => {
   return [];
 };
 
+const buildParagraphNode = (childVNode) => {
+  const listParagraphChildren = buildListParagraphChildren(childVNode);
+
+  return new VNode('p', null, listParagraphChildren);
+};
+
 const buildListFallbackNode = (childVNode) => {
   // childVNode is not nested list (ol or ul). Parent is not p
-  const listParagraphChildren = buildListParagraphChildren(childVNode);
-  const paragraphVNode = new VNode('p', null, listParagraphChildren);
-
   if (isVNode(childVNode)) {
     if (childVNode.tagName.toLowerCase() === 'li') {
       // It's an li, return as is
@@ -116,7 +150,7 @@ const buildListFallbackNode = (childVNode) => {
 
     if (childVNode.tagName.toLowerCase() !== 'p') {
       // It's a VNode, but something else. Create a new p VNode
-      return paragraphVNode;
+      return buildParagraphNode(childVNode);
     }
 
     // It's a p, return as is
@@ -124,7 +158,7 @@ const buildListFallbackNode = (childVNode) => {
   }
 
   // It's something else, create a new p VNode
-  return paragraphVNode;
+  return buildParagraphNode(childVNode);
 };
 
 export const buildList = async (vNode, docxDocumentInstance, xmlFragment) => {
